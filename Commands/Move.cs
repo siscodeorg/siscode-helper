@@ -14,40 +14,26 @@ namespace siscode_bot.Commands {
     public class Move : BaseCommandModule {
         [Command("move"), Prefix(">>")]
         public async Task MoveCommand(CommandContext ctx, DiscordChannel dst, bool soft = false) {
-            var messages = await ctx.Channel.GetMessagesAsync();
-            var MessageIds = new List<ulong>();
+            var _fetch = await ctx.Channel.GetMessagesAsync();
+            var Messages = new List<DiscordMessage>(_fetch);
             var currentUser = 0ul;
             int count = 1;
-            var (start, end) = (messages.getMessage(">>move start"), messages.getMessage(">>move end"));
-         
-            while (start == default(DiscordMessage) && messages.Count != 0 && count < 6) {
-                messages = await ctx.Channel.GetMessagesBeforeAsync(messages.LastOrDefault().Id);
-                MessageIds.InsertRange(0,messages.Select(x => x.Id));
-                end = messages.getMessage(">>move start");
+            var (start, end) = (_fetch.getMessage(">>move start"), _fetch.getMessage(">>move end"));
+            
+            while (start == default(DiscordMessage) && _fetch.Count != 0 && count < 6) {
+                _fetch = await ctx.Channel.GetMessagesBeforeAsync(_fetch.LastOrDefault().Id);
+                Messages.InsertRange(0,_fetch);
+                end = _fetch.getMessage(">>move start");
                 count++;
             }
 
             if (end == default(DiscordMessage)) {
-                await ctx.RespondAsync(embed: EmbedBase.OutputEmbed($"No starting message was found after searching ~{MessageIds.Count} messages. Exiting."));
+                await ctx.RespondAsync(embed: EmbedBase.OutputEmbed($"No starting message was found after searching ~{Messages.Count} messages. Exiting."));
                 return;
             }
             await ctx.RespondAsync(embed: EmbedBase.OutputEmbed($"Found starting and ending messages. Transfer has begun, Please wait."));
-            var MessageCount = MessageIds.Where(m => m >= start.Id && m <= end.Id).Count();
-            var AllMessages = new List<DiscordMessage>();
-            AllMessages.Add(start);
-            if (MessageCount > 100) {
-                AllMessages.AddRange(await ctx.Channel.GetMessagesAfterAsync(start.Id));
-                MessageCount -= 100;
-                while (MessageCount > 100) {
-                    AllMessages.AddRange((await ctx.Channel.GetMessagesAfterAsync(AllMessages.Last().Id)).Reverse());
-                    MessageCount -= 100;
-                }
-                AllMessages.AddRange((await ctx.Channel.GetMessagesAfterAsync(AllMessages.Last().Id,MessageCount-1)).Reverse());
-
-            }
-            else {
-                AllMessages.AddRange((await ctx.Channel.GetMessagesAfterAsync(start.Id, MessageCount-1)).Reverse());
-            }
+            Messages.Reverse();
+            var AllMessages = Messages.Where(m => m.Id >= start.Id && m.Id <= end.Id).ToList();
             var embeds = await AllMessages.ToEmbeds(ctx);
             foreach (var embed in embeds) {
                 await dst.SendMessageAsync(embed: embed);
