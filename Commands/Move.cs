@@ -55,6 +55,7 @@ namespace siscode_bot.Commands {
 
             if (!soft) {
                 foreach (var msg in AllMessages) {
+                    if(msg.Attachments.Any()) continue;
                     await msg.DeleteAsync();
                 }
             }
