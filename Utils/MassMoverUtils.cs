@@ -56,7 +56,7 @@ namespace siscode_bot.Utils {
             var data = messages.Select(m => SanitizeMessage(m.Content)).Where(x => x != string.Empty);
             currEmbed = currEmbed.Mutate(x => x.WithDescription(string.Join("\n", data)));
             if (messages.Any(x => x.Attachments.Any())) {
-                currEmbed = currEmbed.Mutate(x => x.WithColor(DiscordColor.Purple).AddField("Attachments", string.Join("\n",
+                currEmbed = currEmbed.Mutate(x => x.WithColor(DiscordColor.Violet).AddField("Attachments", string.Join("\n",
                     messages.SelectMany(m => m.Attachments.Select(xa => $"[{xa.FileName}]({xa.Url})")))));
             }
             ret.Add(currEmbed);
