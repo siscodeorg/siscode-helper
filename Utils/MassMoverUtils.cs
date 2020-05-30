@@ -40,12 +40,12 @@ namespace siscode_bot.Utils {
         internal static List<DiscordEmbed> GenerateMessage(List<DiscordMessage> messages, DiscordMember member) {
             if (messages == null) return default;
             var ret = new List<DiscordEmbed>();
-            var currEmbed = new DiscordEmbedBuilder().WithAuthor($"{(member.Nickname ?? member.Username)} - {messages.First().Timestamp}",null, member.AvatarUrl).Build();
+            var currEmbed = new DiscordEmbedBuilder().WithAuthor($"{(member.Nickname ?? member.Username)}",null, member.AvatarUrl).Build();
             if (member.IsBot) {
                 foreach (var message in messages) {
                     currEmbed = message.Embeds[0].Mutate(x =>
                         x.WithAuthor(
-                            $"{(member.Nickname ?? member.Username)} - {messages.First().Timestamp}", 
+                            $"{(member.Nickname ?? member.Username)}", 
                             null, member.AvatarUrl));
                     ret.Add(currEmbed);
                 }
