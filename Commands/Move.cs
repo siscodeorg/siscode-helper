@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -18,22 +19,21 @@ namespace siscode_bot.Commands {
             var Messages = new List<DiscordMessage>(_fetch);
             var currentUser = 0ul;
             int count = 1;
-            var (start, end) = (_fetch.getMessage(">>move start"), _fetch.getMessage(">>move end"));
-            
+            var (start, end) = (_fetch.getMessage(">>move start"), _fetch.getMessage(">>move end"))
             while (start == default(DiscordMessage) && _fetch.Count != 0 && count < 6) {
                 _fetch = await ctx.Channel.GetMessagesBeforeAsync(_fetch.LastOrDefault().Id);
-                Messages.InsertRange(0,_fetch);
-                end = _fetch.getMessage(">>move start");
+                Messages.AddRange(_fetch);
+                start = _fetch.getMessage(">>move start");
                 count++;
             }
 
-            if (end == default(DiscordMessage)) {
+            if (start == default(DiscordMessage)) {
                 await ctx.RespondAsync(embed: EmbedBase.OutputEmbed($"No starting message was found after searching ~{Messages.Count} messages. Exiting."));
                 return;
             }
             await ctx.RespondAsync(embed: EmbedBase.OutputEmbed($"Found starting and ending messages. Transfer has begun, Please wait."));
-            Messages.Reverse();
             var AllMessages = Messages.Where(m => m.Id >= start.Id && m.Id <= end.Id).ToList();
+            AllMessages.Reverse();
             var embeds = await AllMessages.ToEmbeds(ctx);
             foreach (var embed in embeds) {
                 await dst.SendMessageAsync(embed: embed);
@@ -41,13 +41,12 @@ namespace siscode_bot.Commands {
 
             if (!soft) {
                 foreach (var msg in AllMessages) {
-                    if(msg.Attachments.Any()) continue;
+                    if (msg.Attachments.Any()) continue;
                     await msg.DeleteAsync();
                 }
             }
-            
+
         }
     }
-    
 }
-    
+
