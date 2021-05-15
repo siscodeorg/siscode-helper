@@ -37,7 +37,9 @@ namespace siscode_helper.Commands {
                 var guildUsers = await Task.WhenAll(users.Select(x => Context.Guild.GetUserAsync(x.Id)));
                 var members = guildUsers.Select(x => new KeyValuePair<ulong, IGuildUser>(x.Id, x)).ToDictionary(x => x.Key, x => x.Value);
                 
-                await Task.WhenAll(blocks.Select(x => SendBlockAsync(x, members, webhookClient)));
+                foreach (var block in blocks) {
+                    await SendBlockAsync(block, members, webhookClient);
+                }
                 await webhook.DeleteAsync();
                 await toTextChannel.DeleteMessagesAsync(messages);
             }
