@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.Webhook;
 using sisbase.CommandsNext;
 using sisbase.Streams;
+using siscode_helper.Utils;
 
 namespace siscode_helper.Commands {
     public class Move : ModuleBase<SisbaseCommandContext> {
@@ -13,27 +16,35 @@ namespace siscode_helper.Commands {
         public async Task MoveCommand(IMessageChannel channel, params ulong[] ids) {
             var pairs = pair(ids.ToList());
             
-            if (!(channel is ITextChannel textChannel))  return;
+            if (!(channel is ITextChannel toTextChannel))  return;
+            var fromMessageChannel = Context.Channel as ITextChannel;
             
-            var webhook = await textChannel.CreateWebhookAsync("MessageBoi");
+            var webhook = await toTextChannel.CreateWebhookAsync("MessageBoi");
             DiscordWebhookClient webhookClient = new(webhook);
             
             foreach (var (start,end) in pairs) {
-                var messages = await textChannel.StreamAllMessagesAsync()
+                var messages = await fromMessageChannel.StreamAllMessagesAsync()
                         .TakeWhile(m => m.Id >= start)
                         .SkipWhile(m => m.Id > end)
                         .ToListAsync();
 
-                var blocks = messageBlock(messages);
+                var blocks = messageBlock(messages).Select(a => {
+                    var (user, arr) = a;
+                    arr.Reverse();
+                    return (user, arr);
+                }).ToList();
+                
                 blocks.Reverse();
                 
                 var users = blocks.Select(x => x.Item1).Distinct();
                 var guildUsers = await Task.WhenAll(users.Select(x => Context.Guild.GetUserAsync(x.Id)));
                 var members = guildUsers.Select(x => new KeyValuePair<ulong, IGuildUser>(x.Id, x)).ToDictionary(x => x.Key, x => x.Value);
                 
-                await Task.WhenAll(blocks.Select(x => SendBlockAsync(x, members, webhookClient)));
+                foreach (var block in blocks) {
+                    await SendBlockAsync(block, members, webhookClient);
+                }
                 await webhook.DeleteAsync();
-                await textChannel.DeleteMessagesAsync(messages);
+                await toTextChannel.DeleteMessagesAsync(messages);
             }
         }
 
@@ -42,13 +53,21 @@ namespace siscode_helper.Commands {
             var compoundMsg = "";
             var (user, messages) = block;
             foreach (var msg in messages) {
-                if (!msg.Attachments.Any()) {
-                    compoundMsg += $"{msg.Content}\n";
-                    continue;
+                compoundMsg += $"{msg.Content}\n";
+                if (!msg.Attachments.Any()) continue;
+
+                var attachments = await Task.WhenAll(msg.Attachments.Select(x =>
+                    new WebClient().DownloadOnlineResourceAsync(x.Url, FileUtils.GetTempName(x.Filename))));
+                
+                if (!string.IsNullOrWhiteSpace(compoundMsg)) {
+                    await client.SendMessageAsync(compoundMsg, avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
                 }
 
-                await client.SendMessageAsync(compoundMsg, avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
-                await client.SendFileAsync(msg.Attachments.Select(a => a.Url).First(), msg.Content);
+                foreach (var attachment in attachments) {
+                    await client.SendFileAsync(attachment, "", avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
+                    File.Delete(attachment);
+                }
+
                 compoundMsg = "";
             }
 
