@@ -25,7 +25,12 @@ namespace siscode_helper.Commands {
                         .SkipWhile(m => m.Id > end)
                         .ToListAsync();
 
-                var blocks = messageBlock(messages);
+                var blocks = messageBlock(messages).Select(a => {
+                    var (user, arr) = a;
+                    arr.Reverse();
+                    return (user, arr);
+                }).ToList();
+                
                 blocks.Reverse();
                 
                 var users = blocks.Select(x => x.Item1).Distinct();
