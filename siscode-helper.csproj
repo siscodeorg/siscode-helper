@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="sisbase.net" Version="1.0.1-beta0004" />
+    <PackageReference Include="sisbase.net" Version="1.0.1-beta0008" />
   </ItemGroup>
 
 </Project>
