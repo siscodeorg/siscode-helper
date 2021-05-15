@@ -13,13 +13,14 @@ namespace siscode_helper.Commands {
         public async Task MoveCommand(IMessageChannel channel, params ulong[] ids) {
             var pairs = pair(ids.ToList());
             
-            if (!(channel is ITextChannel textChannel))  return;
+            if (!(channel is ITextChannel toTextChannel))  return;
+            var fromMessageChannel = Context.Channel as ITextChannel;
             
-            var webhook = await textChannel.CreateWebhookAsync("MessageBoi");
+            var webhook = await toTextChannel.CreateWebhookAsync("MessageBoi");
             DiscordWebhookClient webhookClient = new(webhook);
             
             foreach (var (start,end) in pairs) {
-                var messages = await textChannel.StreamAllMessagesAsync()
+                var messages = await fromMessageChannel.StreamAllMessagesAsync()
                         .TakeWhile(m => m.Id >= start)
                         .SkipWhile(m => m.Id > end)
                         .ToListAsync();
@@ -33,7 +34,7 @@ namespace siscode_helper.Commands {
                 
                 await Task.WhenAll(blocks.Select(x => SendBlockAsync(x, members, webhookClient)));
                 await webhook.DeleteAsync();
-                await textChannel.DeleteMessagesAsync(messages);
+                await toTextChannel.DeleteMessagesAsync(messages);
             }
         }
 
