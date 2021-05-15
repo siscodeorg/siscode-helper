@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.Webhook;
 using sisbase.CommandsNext;
 using sisbase.Streams;
+using siscode_helper.Utils;
 
 namespace siscode_helper.Commands {
     public class Move : ModuleBase<SisbaseCommandContext> {
@@ -53,8 +56,18 @@ namespace siscode_helper.Commands {
                 compoundMsg += $"{msg.Content}\n";
                 if (!msg.Attachments.Any()) continue;
 
-                await client.SendMessageAsync(compoundMsg, avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
-                await client.SendFileAsync(msg.Attachments.Select(a => a.Url).First(), msg.Content);
+                var attachments = await Task.WhenAll(msg.Attachments.Select(x =>
+                    new WebClient().DownloadOnlineResourceAsync(x.Url, FileUtils.GetTempName(x.Filename))));
+                
+                if (!string.IsNullOrWhiteSpace(compoundMsg)) {
+                    await client.SendMessageAsync(compoundMsg, avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
+                }
+
+                foreach (var attachment in attachments) {
+                    await client.SendFileAsync(attachment, "", avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
+                    File.Delete(attachment);
+                }
+
                 compoundMsg = "";
             }
 
