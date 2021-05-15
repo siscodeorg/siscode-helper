@@ -48,10 +48,8 @@ namespace siscode_helper.Commands {
             var compoundMsg = "";
             var (user, messages) = block;
             foreach (var msg in messages) {
-                if (!msg.Attachments.Any()) {
-                    compoundMsg += $"{msg.Content}\n";
-                    continue;
-                }
+                compoundMsg += $"{msg.Content}\n";
+                if (!msg.Attachments.Any()) continue;
 
                 await client.SendMessageAsync(compoundMsg, avatarUrl: user.GetAvatarUrl(), username: members[user.Id].Nickname ?? user.Username);
                 await client.SendFileAsync(msg.Attachments.Select(a => a.Url).First(), msg.Content);
