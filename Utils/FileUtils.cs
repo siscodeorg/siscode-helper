@@ -1,5 +1,9 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
+using sisbase.Logging;
 
 namespace siscode_helper.Utils {
     public static class FileUtils {
@@ -25,5 +29,15 @@ namespace siscode_helper.Utils {
 
             return $"{name}{r.Next(10000)}.{ext}";
         }
+
+        public static async Task<string> DownloadOnlineResourceAsync
+            (this WebClient client, 
+            string url,
+            string filename) {
+            Logger.Log($"[Downloading resource] {filename}");
+            await client.DownloadFileTaskAsync(url, filename);
+            Logger.Log($"[Finished downloading] {filename}");
+            return filename;
+        } 
     }
 }
